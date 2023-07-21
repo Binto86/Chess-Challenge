@@ -1,4 +1,5 @@
 ﻿using ChessChallenge.API;
+using System;
 using System.Collections.Generic;
 
 public class MyBot : IChessBot
@@ -13,23 +14,26 @@ public class MyBot : IChessBot
     };
 
     int SearchDepth = 2;
+    Random rng = new();
 
     public Move Think(Board board, Timer timer)
     {
         var moves = board.GetLegalMoves();
         bool isWhite = board.IsWhiteToMove;
-        var bestMove = moves[0];
         var bestEval = -100000;
+        var bestMoves = new List<Move>();
         foreach (var move in moves)
         {
             var eval = MiniMax(board, isWhite, move, 0);
             if (eval > bestEval)
             {
                 bestEval = eval;
-                bestMove = move;
+                bestMoves.Clear();
+                bestMoves.Add(move);
             }
+            if(eval == bestEval) bestMoves.Add(move);
         }
-        return bestMove;
+        return bestMoves[rng.Next(bestMoves.Count)];
     }
 
     int MiniMax(Board board, bool isWhite, Move move, int depth)

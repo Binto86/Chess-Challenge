@@ -1,5 +1,6 @@
 ﻿using ChessChallenge.API;
 using System;
+using System.Collections.Generic;
 
 namespace ChessChallenge.Example
 {
@@ -8,47 +9,70 @@ namespace ChessChallenge.Example
     public class EvilBot : IChessBot
     {
         // Piece values: null, pawn, knight, bishop, rook, queen, king
-        int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
+        List<(PieceType Type, int Value)> PieceValues = new()
+    {
+        (PieceType.Queen, 9),
+        (PieceType.Rook, 5),
+        (PieceType.Bishop, 3),
+        (PieceType.Knight, 3),
+        (PieceType.Pawn, 1)
+    };
+
+        int SearchDepth = 2;
 
         public Move Think(Board board, Timer timer)
         {
-            Move[] allMoves = board.GetLegalMoves();
-
-            // Pick a random move to play if nothing better is found
-            Random rng = new();
-            Move moveToPlay = allMoves[rng.Next(allMoves.Length)];
-            int highestValueCapture = 0;
-
-            foreach (Move move in allMoves)
+            var moves = board.GetLegalMoves();
+            bool isWhite = board.IsWhiteToMove;
+            var bestMove = moves[0];
+            var bestEval = -100000;
+            foreach (var move in moves)
             {
-                // Always play checkmate in one
-                if (MoveIsCheckmate(board, move))
+                var eval = MiniMax(board, isWhite, move, 0);
+                if (eval > bestEval)
                 {
-                    moveToPlay = move;
-                    break;
-                }
-
-                // Find highest value capture
-                Piece capturedPiece = board.GetPiece(move.TargetSquare);
-                int capturedPieceValue = pieceValues[(int)capturedPiece.PieceType];
-
-                if (capturedPieceValue > highestValueCapture)
-                {
-                    moveToPlay = move;
-                    highestValueCapture = capturedPieceValue;
+                    bestEval = eval;
+                    bestMove = move;
                 }
             }
-
-            return moveToPlay;
+            return bestMove;
         }
 
-        // Test if this move gives checkmate
-        bool MoveIsCheckmate(Board board, Move move)
+        int MiniMax(Board board, bool isWhite, Move move, int depth)
         {
-            board.MakeMove(move);
-            bool isMate = board.IsInCheckmate();
-            board.UndoMove(move);
-            return isMate;
+            if (depth == SearchDepth)
+            {
+                board.MakeMove(move);
+                var result = Evaluate(board, isWhite);
+                board.UndoMove(move);
+                return result;
+            }
+            else
+            {
+                board.MakeMove(move);
+                var bestEval = 10000;
+                foreach (var mov in board.GetLegalMoves())
+                {
+                    var eval = MiniMax(board, !isWhite, mov, depth + 1);
+                    if (eval < bestEval) bestEval = eval;
+                }
+                board.UndoMove(move);
+                return bestEval;
+            }
+        }
+
+        int Evaluate(Board board, bool isWhite)
+        {
+            var result = 0;
+            foreach (var pieceValue in PieceValues)
+            {
+                result += board.GetPieceList(pieceValue.Type, true).Count * pieceValue.Value;
+                result -= board.GetPieceList(pieceValue.Type, false).Count * pieceValue.Value;
+            }
+
+            result = isWhite ? result : -result;
+            if (board.IsInCheck()) result += 2;
+            return result;
         }
     }
 }
