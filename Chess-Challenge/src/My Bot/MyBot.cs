@@ -12,24 +12,47 @@ public class MyBot : IChessBot
         (PieceType.Pawn, 1)
     };
 
+    int SearchDepth = 2;
+
     public Move Think(Board board, Timer timer)
     {
-        Move[] moves = board.GetLegalMoves();
+        var moves = board.GetLegalMoves();
         bool isWhite = board.IsWhiteToMove;
         var bestMove = moves[0];
         var bestEval = -100000;
         foreach (var move in moves)
         {
-            board.MakeMove(move);
-            var eval = Evaluate(board, isWhite);
+            var eval = MiniMax(board, isWhite, move, 0);
             if (eval > bestEval)
             {
                 bestEval = eval;
                 bestMove = move;
             }
-            board.UndoMove(move);
         }
         return bestMove;
+    }
+
+    int MiniMax(Board board, bool isWhite, Move move, int depth)
+    {
+        if (depth == SearchDepth)
+        {
+            board.MakeMove(move);
+            var result = Evaluate(board, isWhite);
+            board.UndoMove(move);
+            return result;
+        }
+        else
+        {
+            board.MakeMove(move);
+            var bestEval = 10000;
+            foreach (var mov in board.GetLegalMoves())
+            {
+                var eval = MiniMax(board, !isWhite, mov, depth + 1);
+                if (eval < bestEval) bestEval = eval;
+            }
+            board.UndoMove(move);
+            return bestEval;
+        }
     }
 
     int Evaluate(Board board, bool isWhite)
@@ -38,9 +61,11 @@ public class MyBot : IChessBot
         foreach (var pieceValue in PieceValues)
         {
             result += board.GetPieceList(pieceValue.Type, true).Count * pieceValue.Value;
-            result += board.GetPieceList(pieceValue.Type, false).Count * pieceValue.Value;
+            result -= board.GetPieceList(pieceValue.Type, false).Count * pieceValue.Value;
         }
-
-        return isWhite ? result : -result;
+        
+        result = isWhite ? result : -result;
+        if (board.IsInCheck()) result += 2;
+        return result;
     }
 }
