@@ -1,7 +1,17 @@
 ﻿using ChessChallenge.API;
+using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
+    List<(PieceType Type, int Value)> PieceValues = new()
+    {
+        (PieceType.Queen, 9),
+        (PieceType.Rook, 5),
+        (PieceType.Bishop, 3),
+        (PieceType.Knight, 3),
+        (PieceType.Pawn, 1)
+    };
+
     public Move Think(Board board, Timer timer)
     {
         Move[] moves = board.GetLegalMoves();
@@ -11,7 +21,7 @@ public class MyBot : IChessBot
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            var eval = Evaluation(board, isWhite);
+            var eval = Evaluate(board, isWhite);
             if (eval > bestEval)
             {
                 bestEval = eval;
@@ -22,20 +32,14 @@ public class MyBot : IChessBot
         return bestMove;
     }
 
-    int Evaluation(Board board, bool isWhite)
+    int Evaluate(Board board, bool isWhite)
     {
         var result = 0;
-        result += board.GetPieceList(PieceType.Queen, true).Count * 9;
-        result += board.GetPieceList(PieceType.Rook, true).Count * 5;
-        result += board.GetPieceList(PieceType.Bishop, true).Count * 3;
-        result += board.GetPieceList(PieceType.Knight, true).Count * 3;
-        result += board.GetPieceList(PieceType.Pawn, true).Count;
-
-        result -= board.GetPieceList(PieceType.Queen, false).Count * 9;
-        result -= board.GetPieceList(PieceType.Rook, false).Count * 5;
-        result -= board.GetPieceList(PieceType.Bishop, false).Count * 3;
-        result -= board.GetPieceList(PieceType.Knight, false).Count * 3;
-        result -= board.GetPieceList(PieceType.Pawn, false).Count;
+        foreach (var pieceValue in PieceValues)
+        {
+            result += board.GetPieceList(pieceValue.Type, true).Count * pieceValue.Value;
+            result += board.GetPieceList(pieceValue.Type, false).Count * pieceValue.Value;
+        }
 
         return isWhite ? result : -result;
     }
