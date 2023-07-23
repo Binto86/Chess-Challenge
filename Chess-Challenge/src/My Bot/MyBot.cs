@@ -1,6 +1,7 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class MyBot : IChessBot
 {
@@ -31,7 +32,9 @@ public class MyBot : IChessBot
             }
             if(eval == bestEval) bestMoves.Add(move);
         }
-        return bestMoves[rng.Next(bestMoves.Count)];
+        var newMoves = bestMoves.Where(x => x.MovePieceType != PieceType.King).ToList();
+        if (newMoves.Count == 0) newMoves = bestMoves;
+        return newMoves[rng.Next(newMoves.Count)];
     }
 
     int MiniMax(Board board, bool isWhite, Move move, int depth)
@@ -68,6 +71,7 @@ public class MyBot : IChessBot
         
         result = isWhite ? result : -result;
         if (board.IsInCheck()) result += 2;
+        if (board.IsInCheckmate()) result += 10000;
         return result;
     }
 }

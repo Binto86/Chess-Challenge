@@ -17,30 +17,31 @@ namespace ChessChallenge.Example
         (PieceType.Knight, 3),
         (PieceType.Pawn, 1)
     };
-
-        int SearchDepth = 2;
+        Random rng = new();
 
         public Move Think(Board board, Timer timer)
         {
             var moves = board.GetLegalMoves();
             bool isWhite = board.IsWhiteToMove;
-            var bestMove = moves[0];
             var bestEval = -100000;
+            var bestMoves = new List<Move>();
             foreach (var move in moves)
             {
-                var eval = MiniMax(board, isWhite, move, 0);
+                var eval = MiniMax(board, isWhite, move, 2);
                 if (eval > bestEval)
                 {
                     bestEval = eval;
-                    bestMove = move;
+                    bestMoves.Clear();
+                    bestMoves.Add(move);
                 }
+                if (eval == bestEval) bestMoves.Add(move);
             }
-            return bestMove;
+            return bestMoves[rng.Next(bestMoves.Count)];
         }
 
         int MiniMax(Board board, bool isWhite, Move move, int depth)
         {
-            if (depth == SearchDepth)
+            if (depth == 0)
             {
                 board.MakeMove(move);
                 var result = Evaluate(board, isWhite);
@@ -53,7 +54,7 @@ namespace ChessChallenge.Example
                 var bestEval = 10000;
                 foreach (var mov in board.GetLegalMoves())
                 {
-                    var eval = MiniMax(board, !isWhite, mov, depth + 1);
+                    var eval = MiniMax(board, !isWhite, mov, depth - 1);
                     if (eval < bestEval) bestEval = eval;
                 }
                 board.UndoMove(move);
